@@ -1,0 +1,35 @@
+name: Build Latest WDA IPA
+
+on:
+  workflow_dispatch: # 允许你手动点击按钮触发
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build WDA
+        run: |
+          # 1. 编译生成 .app 产物
+          xcodebuild -project WebDriverAgent.xcodeproj \
+                     -scheme WebDriverAgentRunner \
+                     -destination 'generic/platform=iOS' \
+                     -configuration Release \
+                     build-for-testing \
+                     DerivedDataPath=build
+
+          # 2. 创建标准的 IPA 目录结构
+          mkdir -p Payload
+          # 这里的路径必须精确，将生成的 .app 拷贝进去
+          cp -r build/Build/Products/Release-iphoneos/WebDriverAgentRunner-Runner.app Payload/
+          
+          # 3. 压缩成 .ipa 文件
+          zip -r WebDriverAgent.ipa Payload
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebDriverAgent-Latest-IPA
+          path: WebDriverAgent.ipa
