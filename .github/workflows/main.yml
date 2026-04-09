@@ -25,22 +25,21 @@ jobs:
 
       - name: Prepare IPA Package
         run: |
-          # 1. 创建 Payload 目录
           mkdir -p Payload
           
-          # 2. 【强化版搜索】在整个 build 目录下查找 .app 文件夹
-          # 排除掉不相关的目录，只找我们需要的 Runner.app
-          APP_PATH=$(find build -name "*Runner.app" -type d | head -n 1)
+          # 1. 因为跳过签名，.app 会出现在 Xcode 的私有派生数据目录里
+          # 我们去 ~/Library/Developer/Xcode/DerivedData 下全量搜索
+          echo "正在从系统缓存目录搜索编译产物..."
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -name "WebDriverAgentRunner-Runner.app" -type d | head -n 1)
           
           if [ -z "$APP_PATH" ]; then
-            echo "错误: 依然未找到 .app 文件。开始输出目录结构进行调试："
-            ls -R build
+            echo "错误: 系统缓存中也未找到 .app 文件。"
             exit 1
           fi
           
-          echo "成功找到 APP: $APP_PATH"
+          echo "成功捕获到 APP 路径: $APP_PATH"
           
-          # 3. 拷贝并压缩
+          # 2. 拷贝到当前目录并打包
           cp -r "$APP_PATH" Payload/
           zip -r WebDriverAgent.ipa Payload
 
